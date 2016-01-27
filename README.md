@@ -107,16 +107,18 @@ val q = quote {
 
 Sources represent the database and provide an execution interface for queries. Quill provides mirror sources for test purposes. Please refer to [sources](#sources) for information on how to create normal sources.
 
-Instead of running the query, mirror sources return a structure with the information that would be used to run the query. There are two mirror source versions:
+Instead of running the query, mirror sources return a structure with the information that would be used to run the query. There are three mirror source configurations:
 
-- `io.getquill.source.mirror.mirrorSource`: Mirrors the quotation AST
-- `io.getquill.source.sql.mirror.mirrorSource`: Mirrors the SQL query
-- `io.getquill.source.cassandra.mirror.mirrorSource`: Mirrors the CQL query
+- `io.getquill.MirrorSourceConfig`: Mirrors the quotation AST
+- `io.getquill.SqlMirrorSource`: Mirrors the SQL query
+- `io.getquill.CassandraMirrorSource`: Mirrors the CQL query
 
 This documentation uses the SQL mirror in its examples under the `db` name:
 
 ```scala
-val db = io.getquill.source.sql.mirror.mirrorSource
+import io.getquill._
+
+lazy val db = source(new SqlMirrorSourceConfig("testSource"))
 ```
 
 # Compile-time quotations #
@@ -515,12 +517,12 @@ Note the usage of `Person` and `Contact` instead of `query[Person]` and `query[C
 
 # SQL-specific operations #
 
-Some operations are sql-specific and not provided with the generic quotation mechanism. The `io.getquill.source.sql.ops` package has some implicit classes for this kind of operations:
+Some operations are sql-specific and not provided with the generic quotation mechanism. The `io.getquill.sources.sql.ops` package has some implicit classes for this kind of operations:
 
 **like**
 
 ```scala
-import io.getquill.source.sql.ops._
+import io.getquill.sources.sql.ops._
 
 val q = quote {
   query[Person].filter(p => p.name like "%John%")
@@ -534,13 +536,15 @@ db.run(q)
 The cql-specific operations are provided by the following import:
 
 ```scala
-import io.getquill.source.cassandra.ops._
+import io.getquill.sources.cassandra.ops._
 ```
 
 The cassandra package also offers a mirror source:
 
 ```scala
-val db = io.getquill.source.cassandra.mirror.mirrorSource
+import io.getquill._
+
+lazy val db = source(new CassandraMirrorSourceConfig("testSource"))
 ```
 
 Supported operations:
@@ -659,7 +663,9 @@ db.run(q)
 Quill's default operation mode is compile-time, but there are queries that have their structure defined only at runtime. Quill automatically falls back to runtime normalization and query generation if the query's structure is not static. Example:
 
 ```scala
-val db = io.getquill.source.sql.mirror.mirrorSource
+import io.getquill._
+
+lazy val db = source(new MirrorSourceConfig("testSource"))
 
 sealed trait QueryType
 case object Minor extends QueryType
@@ -751,7 +757,7 @@ implicit val encodeCustomValue = mappedEncoding[String, UUID](UUID.fromString(_)
 If the database type is not supported, it is possible to provide "raw" encoders and decoders:
 
 ```scala
-import io.getquill.source.mirror.Row
+import io.getquill.sources.mirror.Row
 
 implicit val uuidEncoder = 
   new db.Encoder[UUID] {
@@ -771,11 +777,11 @@ implicit val uuidDecoder =
 Sources represent the database and provide an execution interface for queries. Example:
 
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.jdbc.JdbcSource
-import io.getquill.source.sql.idiom.MySQLDialect
+import io.getquill.sources.sql.idiom.MySQLDialect
 
-object db extends JdbcSource[MySQLDialect, SnakeCase]
+lazy val db = source(new JdbcSourceConfig[MySQLDialect, SnakeCase]("db"))
 ```
 
 ## Dialect ##
@@ -784,8 +790,8 @@ The SQL dialect to be used by the source is defined by the first type parameter.
 
 Quill has two built-in dialects:
 
-- `io.getquill.source.sql.idiom.MySQLDialect`
-- `io.getquill.source.sql.idiom.PostgresDialect`
+- `io.getquill.sources.sql.idiom.MySQLDialect`
+- `io.getquill.sources.sql.idiom.PostgresDialect`
 
 ## Naming strategy ##
 
@@ -830,11 +836,11 @@ libraryDependencies ++= Seq(
 
 source definition
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.jdbc.JdbcSource
-import io.getquill.source.sql.idiom.MySQLDialect
+import io.getquill.sources.sql.idiom.MySQLDialect
 
-object db extends JdbcSource[MySQLDialect, SnakeCase]
+lazy val db = source(new JdbcSourceConfig[MySQLDialect, SnakeCase]("db"))
 ```
 
 application.properties
@@ -861,11 +867,11 @@ libraryDependencies ++= Seq(
 
 source definition
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.jdbc.JdbcSource
-import io.getquill.source.sql.idiom.PostgresDialect
+import io.getquill.sources.sql.idiom.PostgresDialect
 
-object db extends JdbcSource[PostgresDialect, SnakeCase]
+lazy val db = source(new JdbcSourceConfig[PostgresDialect, SnakeCase]("db"))
 ```
 
 application.properties
@@ -894,10 +900,10 @@ libraryDependencies ++= Seq(
 
 source definition
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.async.mysql.MysqlAsyncSource
 
-object db extends MysqlAsyncSource[SnakeCase]
+lazy val db = source(new MysqlAsyncSourceConfig[SnakeCase]("db"))
 ```
 
 application.properties
@@ -925,10 +931,10 @@ libraryDependencies ++= Seq(
 
 source definition
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.async.postgres.PostgresAsyncSource
 
-object db extends PostgresAsyncSource[SnakeCase]
+lazy val db = source(new PostgresAsyncSourceConfig[SnakeCase]("db"))
 ```
 
 application.properties
@@ -956,10 +962,10 @@ libraryDependencies ++= Seq(
 
 source definition
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.finagle.mysql.FinagleMysqlSource
 
-object db extends FinagleMysqlSource[SnakeCase]
+lazy val db = source(new FinagleMysqlSourceConfig[SnakeCase]("db"))
 ```
 
 application.properties
@@ -987,26 +993,26 @@ libraryDependencies ++= Seq(
 
 **synchronous source**
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.cassandra.CassandraSyncSource
 
-object db extends CassandraSyncSource[SnakeCase]
+lazy val db = source(new CassandraSyncSourceConfig[SnakeCase]("db"))
 ```
 
 **asynchronous source**
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.cassandra.CassandraAsyncSource
 
-object db extends CassandraAsyncSource[SnakeCase]
+lazy val db = source(new CassandraAsyncSourceConfig[SnakeCase]("db"))
 ```
 
 **stream source**
 ```scala
+import io.getquill._
 import io.getquill.naming.SnakeCase
-import io.getquill.source.cassandra.CassandraStreamSource
 
-object db extends CassandraStreamSource[SnakeCase]
+lazy val db = source(new CassandraStreamSourceConfig[SnakeCase]("db"))
 ```
 
 The configurations are set using runtime reflection on the [`Cluster.builder`](https://docs.datastax.com/en/drivers/java/2.1/com/datastax/driver/core/Cluster.Builder.html) instance. It is possible to set nested structures like `queryOptions.consistencyLevel`, use enum values like `LOCAL_QUORUM`, and set multiple parameters like in `credentials`.
