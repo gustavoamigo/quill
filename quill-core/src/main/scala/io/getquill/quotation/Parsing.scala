@@ -336,6 +336,8 @@ trait Parsing {
       Function(List(Ident("x1")), Insert(astParser(query)))
     case q"$query.delete" =>
       Delete(astParser(query))
+    case q"$query.returning[$t](($alias) => $body)" =>
+      Returning(astParser(query), identParser(alias), astParser(body))
   }
 
   private val assignmentParser: Parser[Assignment] = Parser[Assignment] {

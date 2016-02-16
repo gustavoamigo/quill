@@ -17,8 +17,8 @@ trait SourceMacro extends Quotation with ActionMacro with QueryMacro with Resolv
 
   def run[R, S](quoted: Expr[Quoted[Any]])(implicit r: WeakTypeTag[R], s: WeakTypeTag[S]): Tree = {
     implicit val t = c.WeakTypeTag(quoted.actualType.baseType(c.weakTypeOf[Quoted[Any]].typeSymbol).typeArgs.head)
-    verifyFreeVariables(ast(quoted)) match {
 
+    verifyFreeVariables(ast(quoted)) match {
       case ast if (t.tpe.typeSymbol.fullName.startsWith("scala.Function")) =>
         val bodyType = c.WeakTypeTag(t.tpe.typeArgs.takeRight(1).head)
         val params = (1 until t.tpe.typeArgs.size).map(i => Ident(s"p$i")).toList
@@ -32,7 +32,7 @@ trait SourceMacro extends Quotation with ActionMacro with QueryMacro with Resolv
   private def run[R, S, T](ast: Ast, params: List[(Ident, Type)])(implicit r: WeakTypeTag[R], s: WeakTypeTag[S], t: WeakTypeTag[T]): Tree =
     ast match {
       case ast if ((t.tpe.erasure <:< c.weakTypeTag[Action[Any]].tpe.erasure)) =>
-        runAction[S, T](ast, params)
+        runAction[R, S, T](ast, params)
 
       case ast =>
         runQuery(ast, params)(r, s, queryType(t.tpe))

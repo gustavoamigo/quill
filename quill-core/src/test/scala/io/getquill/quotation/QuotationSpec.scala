@@ -12,6 +12,7 @@ class QuotationSpec extends Spec {
       "entity" - {
         "without aliases" in {
           quote(unquote(qr1)).ast mustEqual Entity("TestEntity")
+          quote(qr1).ast mustEqual Entity("TestEntity")
         }
         "with alias" in {
           val q = quote {
@@ -266,6 +267,13 @@ class QuotationSpec extends Spec {
             qr1.insert
           }
           quote(unquote(q)).ast mustEqual Function(List(Ident("x1")), Insert(Entity("TestEntity")))
+        }
+
+        "returning" in {
+          val q = quote {
+            qr1.returning(t => t.i).insert
+          }
+          quote(unquote(q)).ast mustEqual Function(List(Ident("x1")), Insert(Returning(Entity("TestEntity"), Ident("t"), Property(Ident("t"), "i"))))
         }
       }
       "delete" in {

@@ -27,9 +27,9 @@ class MirrorSource(config: SourceConfig[MirrorSource])
   def run[P1, P2, P3, T](quoted: Quoted[(P1, P2, P3) => Query[T]]): (P1, P2, P3) => QueryMirror[T] = macro MirrorSourceMacro.run[Row, Row]
 
   def run[T](quoted: Quoted[Action[T]]): ActionMirror = macro MirrorSourceMacro.run[Row, Row]
-  def run[P1, T](quoted: Quoted[P1 => Action[T]]): List[P1] => BatchActionMirror = macro MirrorSourceMacro.run[Row, Row]
-  def run[P1, P2, T](quoted: Quoted[(P1, P2) => Action[T]]): List[(P1, P2)] => BatchActionMirror = macro MirrorSourceMacro.run[Row, Row]
-  def run[P1, P2, P3, T](quoted: Quoted[(P1, P2, P3) => Action[T]]): List[(P1, P2, P3)] => BatchActionMirror = macro MirrorSourceMacro.run[Row, Row]
+  def run[P1, T, R](quoted: Quoted[P1 => Action[T]]): List[P1] => BatchActionMirror[R] = macro MirrorSourceMacro.run[Row, Row]
+  def run[P1, P2, T, R](quoted: Quoted[(P1, P2) => Action[T]]): List[(P1, P2)] => BatchActionMirror[R] = macro MirrorSourceMacro.run[Row, Row]
+  def run[P1, P2, P3, T, R](quoted: Quoted[(P1, P2, P3) => Action[T]]): List[(P1, P2, P3)] => BatchActionMirror[R] = macro MirrorSourceMacro.run[Row, Row]
 
   def run[T](quoted: Quoted[T]): QueryMirror[T] = macro MirrorSourceMacro.run[Row, Row]
   def run[P1, T](quoted: Quoted[P1 => T]): P1 => QueryMirror[T] = macro MirrorSourceMacro.run[Row, Row]
@@ -49,11 +49,17 @@ class MirrorSource(config: SourceConfig[MirrorSource])
   def execute(ast: Ast) =
     ActionMirror(ast)
 
-  case class BatchActionMirror(ast: Ast, bindList: List[Row])
+  case class BatchActionMirror[R](ast: Ast, bindList: List[Row], returningExtractor: Option[Row => R] = None)
 
   def execute[T](ast: Ast, bindParams: T => Row => Row) =
     (values: List[T]) =>
       BatchActionMirror(ast, values.map(bindParams).map(_(Row())))
+
+  def execute[T, R](ast: Ast, bindParams: T => Row => Row, returningExtractor: Row => R) =
+    (values: List[T]) => {
+      val rows = values.map(bindParams).map(_(Row()))
+      BatchActionMirror(ast, rows, Some(returningExtractor))
+    }
 
   case class QueryMirror[T](ast: Ast, binds: Row, extractor: Row => T)
 

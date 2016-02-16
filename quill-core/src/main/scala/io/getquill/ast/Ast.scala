@@ -98,6 +98,8 @@ case class AssignedAction(action: Ast, assignments: List[Assignment]) extends Ac
 
 case class Assignment(input: Ident, property: String, value: Ast)
 
+case class Returning(action: Ast, alias: Ident, body: Ast) extends Action
+
 //************************************************************
 
 case class Dynamic(tree: Any) extends Ast
