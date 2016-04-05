@@ -40,6 +40,8 @@ trait StatefulTransformer[T] {
 
       case l: Dynamic => (l, this)
 
+      case l: Binding => (l, this)
+
       case Block(a) =>
         val (at, att) = apply(a)(_.apply)
         (Block(at), att)

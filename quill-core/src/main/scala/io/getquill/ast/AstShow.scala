@@ -18,6 +18,7 @@ object AstShow {
     case ast: Infix           => ast.show
     case ast: OptionOperation => ast.show
     case ast: Dynamic         => ast.show
+    case ast: Binding         => ast.show
     case ast: If              => ast.show
     case ast: Block           => ast.show
     case ast: Val             => ast.show
@@ -30,6 +31,10 @@ object AstShow {
 
   implicit val dynamicShow: Show[Dynamic] = Show[Dynamic] {
     case Dynamic(tree) => tree.toString
+  }
+
+  implicit val bindingShow: Show[Binding] = Show[Binding] {
+    case Binding(_) => "?"
   }
 
   implicit val blockShow: Show[Block] = Show[Block] {

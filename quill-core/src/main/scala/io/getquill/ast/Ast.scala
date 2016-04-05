@@ -111,3 +111,11 @@ case class Assignment(input: Ident, property: String, value: Ast)
 //************************************************************
 
 case class Dynamic(tree: Any) extends Ast
+
+case class Binding(key: String) extends Ast
+
+class CompileTimeBinding[T](override val key: String, val tree: T) extends Binding(key)
+object CompileTimeBinding {
+  def apply[T](key: String, tree: T) = new CompileTimeBinding[T](key, tree)
+  def unapply[T](arg: CompileTimeBinding[T]): Option[(String, T)] = Some((arg.key, arg.tree))
+}

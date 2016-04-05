@@ -7,8 +7,11 @@ import io.getquill.norm.BetaReduction
 import io.getquill.util.Messages.RichContext
 import io.getquill.util.Interleave
 
-trait Parsing extends SchemaConfigParsing {
-  this: Quotation =>
+import scala.reflect.macros.whitebox.Context
+
+abstract class Parsing[C <: Context](val c: C) extends SchemaConfigParsing with Quotation {
+
+  val freeVars: List[c.universe.Symbol]
 
   import c.universe.{ Ident => _, Constant => _, Function => _, If => _, Block => _, _ }
 
@@ -97,9 +100,9 @@ trait Parsing extends SchemaConfigParsing {
   }
 
   val quotedAstParser: Parser[Ast] = Parser[Ast] {
+    case t if isFreeVariable(t)        => CompileTimeBinding(t.hashCode().toString, t)
     case q"$pack.unquote[$t]($quoted)" => astParser(quoted)
     case q"$pack.lift[$t]($value)"     => Dynamic(value)
-
     case t if (t.tpe <:< c.weakTypeOf[Quoted[Any]]) =>
       unquote[Ast](t) match {
         case Some(ast) if (!IsDynamic(ast)) => Rebind(c)(t, ast, astParser(_))
@@ -356,6 +359,17 @@ trait Parsing extends SchemaConfigParsing {
 
   private def isTraversable(tree: Tree) = {
     tree.tpe <:< typeOf[Traversable[_]]
+  }
+
+  private def isFreeVariable(tree: Tree) = {
+    tree match {
+      case t if (t.tpe <:< c.weakTypeOf[Quoted[Any]]) => false
+      case t if isTraversable(t) => false
+      case t if is[QuillQuery[Any]](t) => false
+      case t if is[Option[Any]](t) => false
+      case t if freeVars.contains(t.symbol) => true
+      case _ => false
+    }
   }
 
   val valueParser: Parser[Value] = Parser[Value] {

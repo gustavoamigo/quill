@@ -1,8 +1,7 @@
 package io.getquill.quotation
 
 import scala.reflect.macros.whitebox.Context
-
-import io.getquill.ast._
+import io.getquill.ast.{ CompileTimeBinding, _ }
 
 trait Liftables {
   val c: Context
@@ -28,6 +27,8 @@ trait Liftables {
     case If(a, b, c) => q"$pack.If($a, $b, $c)"
     case Dynamic(tree: Tree) if (tree.tpe <:< c.weakTypeOf[Quoted[Any]]) => q"$tree.ast"
     case Dynamic(tree: Tree) => q"$pack.Constant($tree)"
+    case Binding(key: String) => q"$pack.Binding($key)"
+    case CompileTimeBinding(key: String, _) => q"$pack.Binding($key)"
   }
 
   implicit val optionOperationTypeLiftable: Liftable[OptionOperationType] = Liftable[OptionOperationType] {
