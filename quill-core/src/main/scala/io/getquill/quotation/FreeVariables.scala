@@ -19,6 +19,6 @@ object FreeVariables {
   def extract[C <: Context](c: C)(ast: Ast): List[CompileTimeBinding[c.Tree]] =
     new FreeVariables[c.Tree](List.empty[CompileTimeBinding[c.Tree]])(ast) match {
       case (_, transformer) =>
-        transformer.state
+        transformer.state.reverse
     }
 }

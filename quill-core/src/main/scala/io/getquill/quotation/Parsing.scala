@@ -32,6 +32,7 @@ abstract class Parsing[C <: Context](val c: C) extends SchemaConfigParsing with 
   }
 
   val astParser: Parser[Ast] = Parser[Ast] {
+    case `freeVarParser`(value)             => value
     case `valParser`(value)                 => value
     case `patMatchValParser`(value)         => value
     case `valueParser`(value)               => value
@@ -99,8 +100,12 @@ abstract class Parsing[C <: Context](val c: C) extends SchemaConfigParsing with 
     case q"if($a) $b else $c" => If(astParser(a), astParser(b), astParser(c))
   }
 
+  val freeVarParser: Parser[Ast] = Parser[Ast] {
+    //case t @ q"$e.$property" if isFreeVariable(e) => CompileTimeBinding(t.hashCode().toString, t)
+    case t if isFreeVariable(t) => CompileTimeBinding(t.hashCode().toString, t)
+  }
+
   val quotedAstParser: Parser[Ast] = Parser[Ast] {
-    case t if isFreeVariable(t)        => CompileTimeBinding(t.hashCode().toString, t)
     case q"$pack.unquote[$t]($quoted)" => astParser(quoted)
     case q"$pack.lift[$t]($value)"     => Dynamic(value)
     case t if (t.tpe <:< c.weakTypeOf[Quoted[Any]]) =>
@@ -260,8 +265,9 @@ abstract class Parsing[C <: Context](val c: C) extends SchemaConfigParsing with 
       OptionOperation(OptionExists, astParser(o), identParser(alias), astParser(body))
   }
 
-  val propertyParser: Parser[Property] = Parser[Property] {
-    case q"$e.$property" => Property(astParser(e), property.decodedName.toString)
+  val propertyParser: Parser[Ast] = Parser[Ast] {
+    case q"$e.$property" if !isFreeVariable(e)    => Property(astParser(e), property.decodedName.toString)
+    case t @ q"$e.$property" if isFreeVariable(e) => CompileTimeBinding(t.hashCode().toString, t)
   }
 
   val operationParser: Parser[Operation] = Parser[Operation] {

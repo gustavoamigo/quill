@@ -132,6 +132,6 @@ class SourceMacroSpec extends Spec {
         qr1.filter(_.i == i)
       }
     }
-    "mirrorSource.run(q)" mustNot compile
+    "mirrorSource.run(q)" must compile
   }
 }

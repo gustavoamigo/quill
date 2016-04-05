@@ -34,7 +34,7 @@ object AstShow {
   }
 
   implicit val bindingShow: Show[Binding] = Show[Binding] {
-    case Binding(_) => "?"
+    case Binding(_, code) => code
   }
 
   implicit val blockShow: Show[Block] = Show[Block] {
