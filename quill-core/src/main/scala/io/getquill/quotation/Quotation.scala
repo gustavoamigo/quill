@@ -32,14 +32,14 @@ trait Quotation extends Liftables with Unliftables {
 
     val ast = parser.astParser(body.tree)
 
-    val freeVarsTree = FreeVariables.extract[c.type](c)(ast).map {
+    val bindings = FreeVariables.extract[c.type](c)(ast).map {
       case CompileTimeBinding(key, tree: Tree) =>
         val binding = TermName(s"binding_$key")
         q"def $binding = $tree"
-      case _ => EmptyTree
     }
 
     val id = TermName(s"id${ast.hashCode}")
+
     q"""
       new ${c.weakTypeOf[Quoted[T]]} {
         @${c.weakTypeOf[QuotedAst]}($ast)
@@ -47,7 +47,7 @@ trait Quotation extends Liftables with Unliftables {
         override def ast = $ast
         override def toString = ast.toString
         def $id() = ()
-        ..$freeVarsTree
+        ..$bindings
       }
     """
   }

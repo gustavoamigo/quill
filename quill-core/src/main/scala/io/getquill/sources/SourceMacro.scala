@@ -19,24 +19,8 @@ trait SourceMacro extends Quotation with ActionMacro with QueryMacro with Resolv
     implicit val t = c.WeakTypeTag(quoted.actualType.baseType(c.weakTypeOf[Quoted[Any]].typeSymbol).typeArgs.head)
 
     val ast = this.ast(quoted)
-    //
-    //    val inPlaceParams =
-    //      FreeVariables(ast).toList.map {
-    //        case i @ Ident(name) =>
-    //          i -> {
-    //            val tree =
-    //              c.typecheck(q"${TermName(name)}", silent = true) match {
-    //                case EmptyTree => c.fail(s"Runtime value binded outside of `source.run`: $name")
-    //                case tree      => tree
-    //              }
-    //            (tree.tpe, tree)
-    //          }
-    //      }.toMap
 
-    val inPlaceParams =
-      FreeVariables.extract[c.type](c)(ast).map {
-        case CompileTimeBinding(key, tree: Tree) => Ident(key) -> { (tree.tpe, tree) }
-      }.toMap
+    val inPlaceParams = binding(quoted.tree).toMap
 
     t.tpe.typeSymbol.fullName.startsWith("scala.Function") match {
 
@@ -47,6 +31,20 @@ trait SourceMacro extends Quotation with ActionMacro with QueryMacro with Resolv
 
       case false =>
         run(ast, inPlaceParams, Nil)(r, s, t)
+    }
+  }
+
+  private def binding(tree: Tree): List[(Ident, (Type, Tree))] = {
+    tree match {
+      case q"{ $stat ; $anon }" =>
+        stat match {
+          case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
+            stats collect {
+              case q"$mods def $tname[..$tparams](...$paramss): $tpt = $tree" if tname.decodedName.toString.startsWith("binding_") =>
+                (Ident(tname.decodedName.toString.replace("binding_", "")), (tree.tpe, tree))
+            }
+        }
+      case _ => List.empty[(Ident, (Type, Tree))]
     }
   }
 
@@ -73,9 +71,4 @@ trait SourceMacro extends Quotation with ActionMacro with QueryMacro with Resolv
   private def paramsTypes[T](implicit t: WeakTypeTag[T]) =
     t.tpe.typeArgs.dropRight(1)
 
-  //  private def verifyFreeVariables(ast: Ast) =
-  //    FreeVariables(ast).toList match {
-  //      case Nil  => ast
-  //      case vars => c.fail(s"A quotation must not have references to variables outside its scope. Found: '${vars.mkString(", ")}' in '$ast'.")
-  //    }
 }
