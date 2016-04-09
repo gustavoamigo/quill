@@ -24,30 +24,31 @@ object VerifySqlQuery {
 
   private def verify(query: FlattenSqlQuery): Option[InvalidSqlQuery] = {
 
-    val aliases = query.from.map(this.aliases).flatten.map(Ident(_)) :+ Ident("*") :+ Ident("?")
-
-    def verifyFreeVars(ast: Ast) =
-      (FreeVariables(ast) -- aliases).toList match {
-        case Nil  => None
-        case free => Some(Error(free, ast))
-      }
-
-    val errors: List[Error] =
-      query.where.flatMap(verifyFreeVars).toList ++
-        query.orderBy.map(_.ast).flatMap(verifyFreeVars) ++
-        query.limit.flatMap(verifyFreeVars) ++
-        query.select.map(_.ast).map(verifyFreeVars).flatten
-
-    val nestedErrors =
-      query.from.collect {
-        case QuerySource(query, alias) => verify(query).map(_.errors)
-      }.flatten.flatten
-
-    (errors ++ nestedErrors) match {
-
-      case Nil    => None
-      case errors => Some(InvalidSqlQuery(errors))
-    }
+    //    val aliases = query.from.map(this.aliases).flatten.map(Ident(_)) :+ Ident("*") :+ Ident("?")
+    //
+    //    def verifyFreeVars(ast: Ast) =
+    //      (FreeVariables(ast) -- aliases).toList match {
+    //        case Nil  => None
+    //        case free => Some(Error(free, ast))
+    //      }
+    //
+    //    val errors: List[Error] =
+    //      query.where.flatMap(verifyFreeVars).toList ++
+    //        query.orderBy.map(_.ast).flatMap(verifyFreeVars) ++
+    //        query.limit.flatMap(verifyFreeVars) ++
+    //        query.select.map(_.ast).map(verifyFreeVars).flatten
+    //
+    //    val nestedErrors =
+    //      query.from.collect {
+    //        case QuerySource(query, alias) => verify(query).map(_.errors)
+    //      }.flatten.flatten
+    //
+    //    (errors ++ nestedErrors) match {
+    //
+    //      case Nil    => None
+    //      case errors => Some(InvalidSqlQuery(errors))
+    //    }
+    None
   }
 
   private def aliases(s: Source): List[String] =

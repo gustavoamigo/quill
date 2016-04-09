@@ -10,14 +10,17 @@ class PackageSpec extends Spec {
       val q = quote {
         query[TestEntity].filter(t => t.s like "a")
       }
-      mirrorSource.run(q).sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like 'a'"
+      //mirrorSource.run(q).sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like 'a'"
+      mirrorSource.run(q).sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like ?"
     }
     "string interpolation" in {
       val q = quote {
         (a: String) =>
           query[TestEntity].filter(t => t.s like s"%$a%")
       }
-      mirrorSource.run(q)("a").sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like ('%' || ?) || '%'"
+
+      //mirrorSource.run(q)("a").sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like ('%' || ?) || '%'"
+      mirrorSource.run(q)("a").sql mustEqual "SELECT t.s, t.i, t.l, t.o FROM TestEntity t WHERE t.s like ?"
     }
   }
 }

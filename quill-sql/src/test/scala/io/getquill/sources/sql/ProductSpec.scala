@@ -28,4 +28,8 @@ trait ProductSpec extends Spec {
     product.insert(_.id -> 0, _.description -> "Window", _.sku -> 1004L)
   }
 
+  def productInsert(prd: Product) = quote {
+    product.insert(_.description -> prd.description, _.sku -> prd.sku)
+  }
+
 }

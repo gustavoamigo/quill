@@ -24,7 +24,7 @@ object CqlIdiom {
         StringContext(parts: _*).s(params.map(_.show): _*)
       case a @ (
         _: Function | _: FunctionApply | _: Dynamic | _: If | _: OptionOperation |
-        _: Query | _: Block | _: Val | _: Ordering
+        _: Query | _: Block | _: Val | _: Ordering | _: Binding
         ) =>
         fail(s"Invalid cql: '$a'")
     }
@@ -148,6 +148,10 @@ object CqlIdiom {
         fail(s"Action ast can't be translated to sql: '$other'")
     }
   }
+
+//  implicit def bindingShow: Show[Binding] = Show[Binding] {
+//    case _ => "?"
+//  }
 
   implicit def entityShow(implicit strategy: NamingStrategy): Show[Entity] = Show[Entity] {
     case e if e.generated.isDefined => fail(s"Cql doesn't support returning generated during insertion")
